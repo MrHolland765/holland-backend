@@ -1,0 +1,299 @@
+import express from "express";
+import cors from "cors";
+import db from "./db.js";
+import bcrypt from "bcrypt";
+import crypto from "crypto";
+
+const app = express();
+const tokenSecret = process.env.AUTH_SECRET;
+
+if (!tokenSecret) {
+  throw new Error("AUTH_SECRET must be set in the backend .env file");
+}
+
+const encode = (value) => Buffer.from(JSON.stringify(value)).toString("base64url");
+const signToken = (payload) => {
+  const body = encode({ ...payload, exp: Date.now() + 1000 * 60 * 60 * 12 });
+  const signature = crypto.createHmac("sha256", tokenSecret).update(body).digest("base64url");
+  return `${body}.${signature}`;
+};
+const verifyToken = (token) => {
+  const [body, signature] = token.split(".");
+  if (!body || !signature) return null;
+  const expected = crypto.createHmac("sha256", tokenSecret).update(body).digest("base64url");
+  if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return null;
+  const payload = JSON.parse(Buffer.from(body, "base64url").toString());
+  return payload.exp > Date.now() ? payload : null;
+};
+const requireRole = (...roles) => (req, res, next) => {
+  const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
+  try {
+    const user = token ? verifyToken(token) : null;
+    if (!user || !roles.includes(user.role)) {
+      return res.status(403).json({ message: "Huruhusiwi kufanya kitendo hiki" });
+    }
+    req.user = user;
+    next();
+  } catch {
+    res.status(401).json({ message: "Kikao cha kuingia kimeisha au si sahihi" });
+  }
+};
+
+const hasColumn = async (table, column) => {
+  const [rows] = await db.query(
+    `SELECT 1 FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
+    [table, column]
+  );
+  return rows.length > 0;
+};
+
+const ensureSchema = async () => {
+  if (!(await hasColumn("users", "phone"))) {
+    await db.query("ALTER TABLE users ADD COLUMN phone VARCHAR(30) NULL AFTER email");
+  }
+  if (!(await hasColumn("users", "address"))) {
+    await db.query("ALTER TABLE users ADD COLUMN address VARCHAR(255) NULL AFTER phone");
+  }
+  if (!(await hasColumn("products", "prep_time"))) {
+    await db.query("ALTER TABLE products ADD COLUMN prep_time VARCHAR(50) NULL AFTER category");
+  }
+
+  const demoUsers = [
+    ["Holland Customer", "customer@holland.com", "0712 345 678", "Mikocheni B, Mwai Kibaki Road", "customer", "123456"],
+    ["Holland Manager", "admin@holland.co.tz", "0711 000 999", "Holland Plaza, Dar es Salaam", "admin", "admin123"],
+    ["Juma Said (Rider)", "juma@holland.co.tz", "0714 555 123", "Kinondoni, Dar es Salaam", "delivery", "delivery123"],
+  ];
+
+  for (const [fullName, email, phone, address, role, password] of demoUsers) {
+    const [existing] = await db.query("SELECT id FROM users WHERE email = ?", [email]);
+    if (existing.length === 0) {
+      await db.query(
+        `INSERT INTO users (full_name, email, phone, address, password, role)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [fullName, email, phone, address, await bcrypt.hash(password, 10), role]
+      );
+    } else {
+      await db.query("UPDATE users SET phone = COALESCE(phone, ?), address = COALESCE(address, ?) WHERE email = ?", [phone, address, email]);
+    }
+  }
+};
+
+db.getConnection()
+  .then((connection) => {
+    console.log("✅ MySQL connected successfully!");
+    connection.release();
+  })
+  .catch((error) => {
+    console.error("❌ MySQL connection failed:", error.message);
+  });
+
+app.use(cors());
+app.use(express.json());
+
+app.get("/", (req, res) => {
+  res.json({
+    message: "Holland Restaurant Backend is running successfully!"
+  });
+});
+
+// GET all users (passwords are never exposed)
+app.get("/api/users", requireRole("admin"), async (req, res) => {
+  try {
+    const [users] = await db.query(
+      "SELECT id, full_name, email, phone, address, role, created_at FROM users"
+    );
+
+    res.json(users);
+  } catch (error) {
+    console.error("Error fetching users:", error.message);
+
+    res.status(500).json({
+      message: "Failed to fetch users"
+    });
+  }
+});
+
+// CREATE new user
+app.post("/api/users", async (req, res) => {
+  try {
+    const { full_name, email, password, phone = null, address = null } = req.body;
+
+    if (!full_name || !email || !password) {
+      return res.status(400).json({
+        message: "Full name, email and password are required"
+      });
+    }
+
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+      return res.status(400).json({ message: "Tafadhali weka email sahihi" });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ message: "Nenosiri lazima liwe na angalau herufi 6" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+const [result] = await db.query(
+  `INSERT INTO users (full_name, email, phone, address, password, role)
+   VALUES (?, ?, ?, ?, ?, ?)`,
+  [
+    full_name,
+    email.toLowerCase(),
+    phone,
+    address,
+    hashedPassword,
+    "customer"
+  ]
+);
+
+    res.status(201).json({
+      message: "User created successfully",
+      userId: result.insertId,
+      token: signToken({ id: result.insertId, role: "customer", email: email.toLowerCase() })
+    });
+
+ } catch (error) {
+  console.error("Error creating user:", error.message);
+  if (error.code === "ER_DUP_ENTRY") {
+    return res.status(409).json({ message: "Email hii tayari imesajiliwa" });
+  }
+  res.status(500).json({ message: "Imeshindikana kusajili akaunti" });
+}
+});
+
+// LOGIN USER
+app.post("/api/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        message: "Email and password are required"
+      });
+    }
+
+    const [users] = await db.query(
+      "SELECT * FROM users WHERE email = ? OR phone = ? LIMIT 1",
+      [email.toLowerCase(), email]
+    );
+
+    if (users.length === 0) {
+      return res.status(401).json({
+        message: "Invalid email or password"
+      });
+    }
+
+    const user = users[0];
+
+    const passwordMatch = await bcrypt.compare(
+      password,
+      user.password
+    );
+
+    if (!passwordMatch) {
+      return res.status(401).json({
+        message: "Invalid email or password"
+      });
+    }
+
+    res.json({
+      message: "Login successful",
+      token: signToken({ id: user.id, role: user.role, email: user.email }),
+      user: {
+        id: user.id,
+        full_name: user.full_name,
+        email: user.email,
+        phone: user.phone,
+        address: user.address,
+        role: user.role
+      }
+    });
+
+  } catch (error) {
+    console.error("Login error:", error.message);
+
+    res.status(500).json({
+      message: "Login failed"
+    });
+  }
+});
+
+// GET all products
+app.get("/api/products", async (req, res) => {
+  try {
+    const [products] = await db.query(
+      "SELECT * FROM products ORDER BY id DESC"
+    );
+
+    res.json(products);
+
+  } catch (error) {
+    console.error("Error fetching products:", error.message);
+
+    res.status(500).json({
+      message: "Failed to fetch products"
+    });
+  }
+});
+
+app.post("/api/products", requireRole("admin"), async (req, res) => {
+  try {
+    const { name, description = "", price, image = "", category = "Foods", prepTime = "15-20 min", available = true } = req.body;
+    if (!name || !Number.isFinite(Number(price)) || Number(price) < 0) {
+      return res.status(400).json({ message: "Jina na bei sahihi vinahitajika" });
+    }
+    const [result] = await db.query(
+      `INSERT INTO products (name, description, price, image, category, prep_time, available)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [name.trim(), description.trim(), Number(price), image.trim(), category.trim(), prepTime.trim(), Boolean(available)]
+    );
+    const [products] = await db.query("SELECT * FROM products WHERE id = ?", [result.insertId]);
+    res.status(201).json(products[0]);
+  } catch (error) {
+    console.error("Error creating product:", error.message);
+    res.status(500).json({ message: "Imeshindikana kuongeza bidhaa" });
+  }
+});
+
+app.put("/api/products/:id", requireRole("admin"), async (req, res) => {
+  try {
+    const { name, description = "", price, image = "", category = "Foods", prepTime = "15-20 min", available = true } = req.body;
+    if (!name || !Number.isFinite(Number(price)) || Number(price) < 0) {
+      return res.status(400).json({ message: "Jina na bei sahihi vinahitajika" });
+    }
+    const [result] = await db.query(
+      `UPDATE products SET name = ?, description = ?, price = ?, image = ?, category = ?, prep_time = ?, available = ? WHERE id = ?`,
+      [name.trim(), description.trim(), Number(price), image.trim(), category.trim(), prepTime.trim(), Boolean(available), req.params.id]
+    );
+    if (result.affectedRows === 0) return res.status(404).json({ message: "Bidhaa haijapatikana" });
+    const [products] = await db.query("SELECT * FROM products WHERE id = ?", [req.params.id]);
+    res.json(products[0]);
+  } catch (error) {
+    console.error("Error updating product:", error.message);
+    res.status(500).json({ message: "Imeshindikana kusasisha bidhaa" });
+  }
+});
+
+app.delete("/api/products/:id", requireRole("admin"), async (req, res) => {
+  try {
+    const [result] = await db.query("DELETE FROM products WHERE id = ?", [req.params.id]);
+    if (result.affectedRows === 0) return res.status(404).json({ message: "Bidhaa haijapatikana" });
+    res.status(204).end();
+  } catch (error) {
+    console.error("Error deleting product:", error.message);
+    res.status(500).json({ message: "Imeshindikana kufuta bidhaa" });
+  }
+});
+
+const PORT = Number(process.env.PORT || 5000);
+
+ensureSchema()
+  .then(() => {
+    app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+  })
+  .catch((error) => {
+    console.error("Unable to prepare the database:", error.message);
+    process.exit(1);
+  });

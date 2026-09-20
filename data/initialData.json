@@ -1,0 +1,334 @@
+{
+  "restaurant": {
+    "name": "Holland Restaurant",
+    "tagline": "Vyakula Vyetu Vizuri & Vinywaji Baridi",
+    "location": "Mikocheni B, Mwai Kibaki Road, Dar es Salaam, Tanzania",
+    "phone": "+255 712 345 678",
+    "email": "info@hollandrestaurant.co.tz",
+    "currency": "TSh",
+    "deliveryFee": 2000,
+    "freeDeliveryThreshold": 50000
+  },
+  "menu": [
+    {
+      "id": "f1",
+      "name": "Biryani ya Kuku (Holland Special)",
+      "category": "Foods",
+      "price": 12000,
+      "rating": 4.9,
+      "prepTime": "20-25 mins",
+      "image": "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=600&auto=format&fit=crop&q=80",
+      "description": "Wali laini wa biryani uliopikwa kwa viungo asilia na kuku aliyekaangwa kwa umaridadi na mchuzi mtamu.",
+      "inStock": true
+    },
+    {
+      "id": "f2",
+      "name": "Pilau ya Ng'ombe & Kachumbari",
+      "category": "Foods",
+      "price": 10000,
+      "rating": 4.8,
+      "prepTime": "15-20 mins",
+      "image": "https://images.unsplash.com/photo-1596797038530-2c107229654b?w=600&auto=format&fit=crop&q=80",
+      "description": "Pilau yenye manukato tele ya karafuu na hiliki ikiwa na nyama laini ya ng'ombe na kachumbari safi.",
+      "inStock": true
+    },
+    {
+      "id": "f3",
+      "name": "Chips Kuku Choma (Robo)",
+      "category": "Foods",
+      "price": 9000,
+      "rating": 4.7,
+      "prepTime": "20 mins",
+      "image": "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=600&auto=format&fit=crop&q=80",
+      "description": "Viazi vikaangavyo vizuri na kuku choma wa kienyeji mwenye ladha kali ya limao na pilipili.",
+      "inStock": true
+    },
+    {
+      "id": "f4",
+      "name": "Mishkaki ya Ng'ombe (Stick 6)",
+      "category": "Foods",
+      "price": 8000,
+      "rating": 4.9,
+      "prepTime": "15 mins",
+      "image": "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=600&auto=format&fit=crop&q=80",
+      "description": "Nyama laini iliyotiwa marinadi ya vitunguu saumu, tangawizi na kuokwa kwenye mkaa moto.",
+      "inStock": true
+    },
+    {
+      "id": "f5",
+      "name": "Holland Deluxe Beef Burger",
+      "category": "Foods",
+      "price": 11000,
+      "rating": 4.8,
+      "prepTime": "15 mins",
+      "image": "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&auto=format&fit=crop&q=80",
+      "description": "Patty nene ya nyama ya ng'ombe, jibini iliyoyeyuka, lettuce, nyanya na mchuzi maalum wa Holland.",
+      "inStock": true
+    },
+    {
+      "id": "s1",
+      "name": "Sambusa za Nyama (Piece 4)",
+      "category": "Snacks",
+      "price": 4000,
+      "rating": 4.9,
+      "prepTime": "10 mins",
+      "image": "https://images.unsplash.com/photo-1601050690597-df0568f70950?w=600&auto=format&fit=crop&q=80",
+      "description": "Sambusa zilizofungwa kwa umakini na kukaangwa kwa ukakasi, zikiwa zimesheheni nyama ya kusaga.",
+      "inStock": true
+    },
+    {
+      "id": "s2",
+      "name": "Katlesi za Samaki (Piece 4)",
+      "category": "Snacks",
+      "price": 4500,
+      "rating": 4.8,
+      "prepTime": "10 mins",
+      "image": "https://images.unsplash.com/photo-1541544741938-0af808871cc0?w=600&auto=format&fit=crop&q=80",
+      "description": "Viazi vilivyopondwa vikichanganywa na samaki safi na kupakwa yai kisha kukaangwa.",
+      "inStock": true
+    },
+    {
+      "id": "s3",
+      "name": "Shawarma ya Kuku",
+      "category": "Snacks",
+      "price": 7000,
+      "rating": 4.9,
+      "prepTime": "12 mins",
+      "image": "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=600&auto=format&fit=crop&q=80",
+      "description": "Mkate wa pita ulioviringishwa kuku aliyerostiwa, salad safi na vitunguu saumu sauce.",
+      "inStock": true
+    },
+    {
+      "id": "s4",
+      "name": "Chips Mayai (Zege)",
+      "category": "Snacks",
+      "price": 5000,
+      "rating": 4.7,
+      "prepTime": "10 mins",
+      "image": "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=600&auto=format&fit=crop&q=80",
+      "description": "Chips zilizopikwa pamoja na mayai mawili ya kienyeji, chumvi na pilipili manga.",
+      "inStock": true
+    },
+    {
+      "id": "d1",
+      "name": "Holland Fresh Passion Juice (500ml)",
+      "category": "Drinks",
+      "price": 3500,
+      "rating": 5.0,
+      "prepTime": "5 mins",
+      "image": "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=600&auto=format&fit=crop&q=80",
+      "description": "Juisi asilia ya passion iliyotengenezwa bila kemikali, yenye ubaridi mzuri na ladha tamu ya asili.",
+      "inStock": true
+    },
+    {
+      "id": "d2",
+      "name": "Fresh Mango Juice (500ml)",
+      "category": "Drinks",
+      "price": 3500,
+      "rating": 4.8,
+      "prepTime": "5 mins",
+      "image": "https://images.unsplash.com/photo-1546173159-315724a31696?w=600&auto=format&fit=crop&q=80",
+      "description": "Juisi nzito ya maembe dodo safi na barafu kidogo.",
+      "inStock": true
+    },
+    {
+      "id": "d3",
+      "name": "Ukwaju Juice / Tamarind Cooler",
+      "category": "Drinks",
+      "price": 3000,
+      "rating": 4.9,
+      "prepTime": "5 mins",
+      "image": "https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=600&auto=format&fit=crop&q=80",
+      "description": "Juisi ya ukwaju iliyotiwa hiliki, tangawizi na sukari kiasi.",
+      "inStock": true
+    },
+    {
+      "id": "d4",
+      "name": "Soda Baridi (Coca-Cola / Sprite / Fanta)",
+      "category": "Drinks",
+      "price": 1500,
+      "rating": 4.6,
+      "prepTime": "2 mins",
+      "image": "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=600&auto=format&fit=crop&q=80",
+      "description": "Soda ya chupa au ya kopo, baridi kama barafu.",
+      "inStock": true
+    },
+    {
+      "id": "sc1",
+      "name": "Holland Chilli Garlic Sauce (Pili Pili Maalum)",
+      "category": "Sauces",
+      "price": 1500,
+      "rating": 4.9,
+      "prepTime": "Instant",
+      "image": "https://images.unsplash.com/photo-1588615419957-61c002245b0a?w=600&auto=format&fit=crop&q=80",
+      "description": "Pilipili maalum ya kukaangwa yenye vitunguu saumu na ndimu.",
+      "inStock": true
+    },
+    {
+      "id": "sc2",
+      "name": "Kachumbari ya Embe Mbichi",
+      "category": "Sauces",
+      "price": 1500,
+      "rating": 4.8,
+      "prepTime": "Instant",
+      "image": "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&auto=format&fit=crop&q=80",
+      "description": "Kachumbari ya embe bichi, nyanya, vitunguu na ndimu safi.",
+      "inStock": true
+    },
+    {
+      "id": "sc3",
+      "name": "Mayonnaise & Garlic Dip",
+      "category": "Sauces",
+      "price": 1500,
+      "rating": 4.7,
+      "prepTime": "Instant",
+      "image": "https://images.unsplash.com/photo-1472476443507-c7a5948772fc?w=600&auto=format&fit=crop&q=80",
+      "description": "Mchuzi mweupe wa mayonesi na vitunguu saumu, mzuri kwa chips na burger.",
+      "inStock": true
+    }
+  ],
+  "orders": [
+    {
+      "id": "ORD-101",
+      "orderNumber": 1,
+      "customerName": "Amina Salum",
+      "customerUsername": "@amina_s",
+      "customerPhone": "0714 888 222",
+      "customerAddress": "Kariakoo, Mtaa wa Swahili, Plot 42",
+      "date": "14/09/2026",
+      "time": "13:45",
+      "category": "Foods",
+      "status": "Preparing",
+      "assignedTo": "Juma Said",
+      "deliveryPhone": "0714 555 123",
+      "paymentMethod": "M-PESA (Vodacom)",
+      "paymentPhone": "0714 888 222",
+      "paymentStatus": "Paid",
+      "items": [
+        { "id": "f1", "name": "Biryani ya Kuku (Holland Special)", "price": 12000, "quantity": 2 },
+        { "id": "s1", "name": "Sambusa za Nyama (Piece 4)", "price": 4000, "quantity": 1 },
+        { "id": "d1", "name": "Holland Fresh Passion Juice (500ml)", "price": 3500, "quantity": 2 },
+        { "id": "sc1", "name": "Holland Chilli Garlic Sauce", "price": 1500, "quantity": 1 }
+      ],
+      "subtotal": 36500,
+      "fee": 2500,
+      "total": 39000,
+      "specialNotes": "Pili pili iwe nyingi pembeni tafadhali."
+    },
+    {
+      "id": "ORD-102",
+      "orderNumber": 2,
+      "customerName": "Kelvin Mushi",
+      "customerUsername": "@kelvin_m",
+      "customerPhone": "0755 123 456",
+      "customerAddress": "Masaki, Chozi Road, House #14",
+      "date": "14/09/2026",
+      "time": "12:30",
+      "category": "Snacks",
+      "status": "Out for Delivery",
+      "assignedTo": "Bakari Hamisi",
+      "deliveryPhone": "0785 222 987",
+      "paymentMethod": "VISA / Mastercard",
+      "paymentPhone": "",
+      "paymentStatus": "Paid",
+      "items": [
+        { "id": "s3", "name": "Shawarma ya Kuku", "price": 7000, "quantity": 2 },
+        { "id": "d2", "name": "Fresh Mango Juice (500ml)", "price": 3500, "quantity": 2 }
+      ],
+      "subtotal": 21000,
+      "fee": 3000,
+      "total": 24000,
+      "specialNotes": "Piga simu ukifika getini."
+    },
+    {
+      "id": "ORD-103",
+      "orderNumber": 3,
+      "customerName": "Fatma Juma",
+      "customerUsername": "@fatma_j",
+      "customerPhone": "0688 990 011",
+      "customerAddress": "Sinza Palestina, Mtaa wa Meeda",
+      "date": "13/09/2026",
+      "time": "19:15",
+      "category": "Drinks",
+      "status": "Delivered",
+      "assignedTo": "Juma Said",
+      "deliveryPhone": "0714 555 123",
+      "paymentMethod": "Lipa Baadaye (Cash)",
+      "paymentPhone": "0688 990 011",
+      "paymentStatus": "Paid (Cash)",
+      "items": [
+        { "id": "f4", "name": "Mishkaki ya Ng'ombe (Stick 6)", "price": 8000, "quantity": 2 },
+        { "id": "s4", "name": "Chips Mayai (Zege)", "price": 5000, "quantity": 2 },
+        { "id": "d3", "name": "Ukwaju Juice / Tamarind Cooler", "price": 3000, "quantity": 2 }
+      ],
+      "subtotal": 32000,
+      "fee": 2000,
+      "total": 34000,
+      "specialNotes": "Asanteni chakula kilikuwa kizuri sana!"
+    }
+  ],
+  "staff": [
+    {
+      "id": "del-1",
+      "name": "Juma Said",
+      "phone": "0714 555 123",
+      "vehicle": "Bodaboda (MC 342 DJP)",
+      "status": "Available",
+      "deliveriesCount": 14,
+      "rating": 4.9,
+      "currentTaskOrderId": null
+    },
+    {
+      "id": "del-2",
+      "name": "Bakari Hamisi",
+      "phone": "0785 222 987",
+      "vehicle": "Bodaboda (MC 908 BBK)",
+      "status": "On Delivery",
+      "deliveriesCount": 22,
+      "rating": 4.8,
+      "currentTaskOrderId": "ORD-102"
+    },
+    {
+      "id": "del-3",
+      "name": "Sarah Mwangi",
+      "phone": "0762 333 456",
+      "vehicle": "Bodaboda (MC 112 AXZ)",
+      "status": "Available",
+      "deliveriesCount": 9,
+      "rating": 4.7,
+      "currentTaskOrderId": null
+    }
+  ],
+  "users": [
+    {
+      "id": "u1",
+      "username": "@customer",
+      "fullName": "Holland Customer",
+      "email": "customer@holland.co.tz",
+      "phone": "0712 345 678",
+      "address": "Mikocheni B, Mwai Kibaki Road, House #45",
+      "role": "customer",
+      "password": "hashed_password_or_demo"
+    },
+    {
+      "id": "u2",
+      "username": "@admin",
+      "fullName": "Holland General Manager",
+      "email": "admin@holland.co.tz",
+      "phone": "0711 000 999",
+      "address": "Holland Plaza, Dar es Salaam",
+      "role": "admin",
+      "password": "hashed_password_or_demo"
+    },
+    {
+      "id": "u3",
+      "username": "@juma_delivery",
+      "fullName": "Juma Said (Rider #1)",
+      "email": "juma@holland.co.tz",
+      "phone": "0714 555 123",
+      "address": "Kinondoni, Dar es Salaam",
+      "role": "delivery",
+      "password": "hashed_password_or_demo"
+    }
+  ]
+}
