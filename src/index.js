@@ -60,10 +60,15 @@ const ensureSchema = async () => {
   }
 
   const demoUsers = [
-    ["Holland Customer", "customer@holland.com", "0712 345 678", "Mikocheni B, Mwai Kibaki Road", "customer", "123456"],
-    ["Holland Manager", "admin@holland.co.tz", "0711 000 999", "Holland Plaza, Dar es Salaam", "admin", "admin123"],
-    ["Juma Said (Rider)", "juma@holland.co.tz", "0714 555 123", "Kinondoni, Dar es Salaam", "delivery", "delivery123"],
-  ];
+  [
+    "Abdullhamid Khamis Abdalla",
+    "abdullhamidkhamis765@gmail.com",
+    "+255657281070",
+    "Holland Restaurant",
+    "admin",
+    "Holland@26"
+  ],
+];
 
   for (const [fullName, email, phone, address, role, password] of demoUsers) {
     const [existing] = await db.query("SELECT id FROM users WHERE email = ?", [email]);
@@ -110,6 +115,26 @@ app.get("/api/users", requireRole("admin"), async (req, res) => {
 
     res.status(500).json({
       message: "Failed to fetch users"
+    });
+  }
+});
+
+// GET all delivery staff
+app.get("/api/delivery", requireRole("admin"), async (req, res) => {
+  try {
+    const [deliveryStaff] = await db.query(
+      `SELECT id, full_name, email, phone, address, role, created_at
+       FROM users
+       WHERE role = 'delivery'
+       ORDER BY id DESC`
+    );
+
+    res.json(deliveryStaff);
+  } catch (error) {
+    console.error("Error fetching delivery staff:", error.message);
+
+    res.status(500).json({
+      message: "Failed to fetch delivery staff"
     });
   }
 });
@@ -161,6 +186,86 @@ const [result] = await db.query(
   }
   res.status(500).json({ message: "Imeshindikana kusajili akaunti" });
 }
+});
+
+app.delete("/api/delivery/:id", requireRole("admin"), async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const [result] = await db.query(
+      "DELETE FROM users WHERE id = ? AND role = 'delivery'",
+      [id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        message: "Delivery account not found",
+      });
+    }
+
+    res.json({
+      message: "Delivery account deleted successfully",
+    });
+  } catch (error) {
+    console.error("Delete delivery error:", error);
+
+    res.status(500).json({
+      message: "Failed to delete delivery account",
+    });
+  }
+});
+
+// ADMIN: ADD DELIVERY STAFF
+app.post("/api/delivery", requireRole("admin"), async (req, res) => {
+  try {
+    const { full_name, email, password, phone = null, address = null } = req.body;
+
+    if (!full_name || !email || !password) {
+      return res.status(400).json({
+        message: "Jina, email na password vinahitajika"
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        message: "Password lazima iwe na angalau herufi 6"
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const [result] = await db.query(
+      `INSERT INTO users
+       (full_name, email, phone, address, password, role)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        full_name,
+        email.toLowerCase(),
+        phone,
+        address,
+        hashedPassword,
+        "delivery"
+      ]
+    );
+
+    res.status(201).json({
+      message: "Delivery account created successfully",
+      userId: result.insertId
+    });
+
+  } catch (error) {
+    console.error("Error creating delivery:", error.message);
+
+    if (error.code === "ER_DUP_ENTRY") {
+      return res.status(409).json({
+        message: "Email hii tayari imesajiliwa"
+      });
+    }
+
+    res.status(500).json({
+      message: "Imeshindikana kutengeneza Delivery account"
+    });
+  }
 });
 
 // LOGIN USER
