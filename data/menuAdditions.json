@@ -1,0 +1,143 @@
+[
+  {
+    "name": "Pilau ya Ng'ombe & Kachumbari",
+    "aliases": ["Pilau ya Ng'ombe", "Pilau Beef"],
+    "description": "Pilau ya mchele wenye harufu ya viungo vya Zanzibar, nyama laini ya ng'ombe na kachumbari fresh.",
+    "price": 10000,
+    "image": "https://images.unsplash.com/photo-1596797038530-2c107229654b?w=600",
+    "category": "Foods",
+    "prep_time": "20 min"
+  },
+  {
+    "name": "Biryani ya Kuku (Holland Special)",
+    "aliases": ["Chicken Biryani", "Biryani ya Kuku"],
+    "description": "Biryani ya wali wenye viungo vya harufu nzuri, kuku mtamu na mchuzi wa Holland, hutolewa ikiwa fresh.",
+    "price": 12000,
+    "image": "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=600",
+    "category": "Foods",
+    "prep_time": "25 min"
+  },
+  {
+    "name": "Chips Kuku Special",
+    "description": "Viazi crispy vilivyokaangwa fresh, vikisindikizwa na kipande cha kuku wa kukaanga na kachumbari.",
+    "price": 12000,
+    "image": "/menu/chips-special.svg",
+    "category": "Foods",
+    "prep_time": "20-25 min"
+  },
+  {
+    "name": "Chips Mayai",
+    "description": "Viazi vya kukaanga vilivyofunikwa kwa mayai na kupikwa hadi kuwa na ukoko laini wa dhahabu.",
+    "price": 5000,
+    "image": "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=600",
+    "category": "Foods",
+    "prep_time": "12-15 min"
+  },
+  {
+    "name": "Chips Mayai (Zege)",
+    "description": "Chips mayai ya zege, yenye viazi na mayai mengi, ikipewa kachumbari na pilipili pembeni.",
+    "price": 6500,
+    "image": "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=600",
+    "category": "Foods",
+    "prep_time": "15-18 min"
+  },
+  {
+    "name": "Chips Mishkaki",
+    "description": "Viazi crispy pamoja na mishkaki ya nyama ya ng'ombe iliyochomwa kwa viungo na limau.",
+    "price": 12000,
+    "image": "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=600",
+    "category": "Foods",
+    "prep_time": "20-25 min"
+  },
+  {
+    "name": "Ugali wa Nyama",
+    "description": "Ugali wa dona au sembe unaoandaliwa na mchuzi wa nyama ya ng'ombe na mboga za majani.",
+    "price": 10000,
+    "image": "https://images.unsplash.com/photo-1547592180-85f173990554?w=600",
+    "category": "Foods",
+    "prep_time": "25-30 min"
+  },
+  {
+    "name": "Juisi Fresh ya Ukwaju (500ml)",
+    "aliases": ["Ukwaju Juice / Tamarind Cooler", "Juisi ya Ukwaju"],
+    "description": "Ukwaju halisi uliotengenezwa fresh, wenye ladha tamu na chachu ya kuburudisha.",
+    "price": 3000,
+    "image": "https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=600",
+    "category": "Drinks",
+    "prep_time": "5 min"
+  },
+  {
+    "name": "Juisi ya Embe Tupu (500ml)",
+    "aliases": ["Fresh Mango Juice (500ml)", "Juisi ya Embe"],
+    "description": "Juisi nzito ya embe lililoiva, iliyochanganywa fresh na maji na barafu kidogo.",
+    "price": 3500,
+    "image": "https://images.unsplash.com/photo-1546173159-315724a31696?w=600",
+    "category": "Drinks",
+    "prep_time": "5 min"
+  },
+  {
+    "name": "Juisi ya Passion Fresh (500ml)",
+    "aliases": ["Holland Fresh Passion Juice (500ml)", "Passion Juice"],
+    "description": "Juisi fresh ya passion yenye harufu nzuri na ladha ya asili, ipo tayari kunywewa ikiwa baridi.",
+    "price": 3500,
+    "image": "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=600",
+    "category": "Drinks",
+    "prep_time": "5 min"
+  },
+  {
+    "name": "Juisi ya Parachichi (Avocado) (500ml)",
+    "description": "Parachichi lililoiva lililosagwa fresh kuwa kinywaji kizito na laini.",
+    "price": 5000,
+    "image": "/menu/avocado-juice-glass.svg",
+    "category": "Drinks",
+    "prep_time": "5 min"
+  },
+  {
+    "name": "Banzi za Zanzibar",
+    "description": "Kitafunwa maarufu cha Zanzibar, kilichoandaliwa fresh kwa mapishi ya nyumbani.",
+    "price": 2500,
+    "image": "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600",
+    "category": "Snacks",
+    "prep_time": "10 min"
+  },
+  {
+    "name": "Maandazi (3 Pieces)",
+    "description": "Maandazi matatu laini yenye harufu ya iliki, yanafaa kwa chai au kama kitafunwa.",
+    "price": 2000,
+    "image": "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600",
+    "category": "Snacks",
+    "prep_time": "5 min"
+  },
+  {
+    "name": "Vileja vya Zanzibar",
+    "description": "Kitafunwa cha Zanzibar kilichoandaliwa fresh, chenye ladha ya kienyeji na kinachofaa muda wowote.",
+    "price": 3000,
+    "image": "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600",
+    "category": "Snacks",
+    "prep_time": "10 min"
+  },
+  {
+    "name": "Keki ya Nyumbani (Slice)",
+    "description": "Kipande cha keki laini iliyookwa fresh, kizuri kuambatanisha na chai au kahawa.",
+    "price": 4000,
+    "image": "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=600",
+    "category": "Snacks",
+    "prep_time": "2 min"
+  },
+  {
+    "name": "Viazi vya Karai",
+    "description": "Viazi vilivyopakwa unga wenye viungo na kukaangwa hadi kuwa crispy, vinatolewa na chutney.",
+    "price": 4000,
+    "image": "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=600",
+    "category": "Snacks",
+    "prep_time": "12 min"
+  },
+  {
+    "name": "Zanzibar Pizza",
+    "description": "Chapati ya Zanzibar iliyojazwa nyama ya kusaga, yai na mboga, kisha kupikwa kwenye kikaango.",
+    "price": 8000,
+    "image": "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600",
+    "category": "Snacks",
+    "prep_time": "15 min"
+  }
+]

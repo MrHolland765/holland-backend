@@ -3,6 +3,8 @@ import cors from "cors";
 import db from "./db.js";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
+import orderRoutes from "./routes/orderRoutes.js";
+import { seedMenu } from "./data/seedMenu.js";
 
 const app = express();
 const tokenSecret = process.env.AUTH_SECRET;
@@ -58,6 +60,53 @@ const ensureSchema = async () => {
   if (!(await hasColumn("products", "prep_time"))) {
     await db.query("ALTER TABLE products ADD COLUMN prep_time VARCHAR(50) NULL AFTER category");
   }
+  await seedMenu();
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS orders (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      order_code VARCHAR(32) NOT NULL UNIQUE,
+      customer_id BIGINT UNSIGNED NOT NULL,
+      customer_name VARCHAR(255) NOT NULL,
+      customer_username VARCHAR(255) NOT NULL,
+      customer_phone VARCHAR(50) NOT NULL DEFAULT '',
+      customer_address VARCHAR(500) NOT NULL DEFAULT '',
+      category VARCHAR(100) NOT NULL DEFAULT 'Foods',
+      status VARCHAR(40) NOT NULL DEFAULT 'Pending',
+      assigned_to BIGINT UNSIGNED NULL,
+      payment_method VARCHAR(255) NOT NULL,
+      payment_phone VARCHAR(50) NOT NULL DEFAULT '',
+      payment_status VARCHAR(50) NOT NULL,
+      payment_reference VARCHAR(100) NULL,
+      payment_verified_by BIGINT UNSIGNED NULL,
+      payment_verified_at DATETIME NULL,
+      items JSON NOT NULL,
+      subtotal DECIMAL(12, 2) NOT NULL,
+      fee DECIMAL(12, 2) NOT NULL,
+      total DECIMAL(12, 2) NOT NULL,
+      special_notes TEXT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_orders_customer_created (customer_id, created_at),
+      INDEX idx_orders_delivery_created (assigned_to, created_at),
+      UNIQUE KEY uq_orders_payment_reference (payment_reference)
+    )
+  `);
+  if (!(await hasColumn("orders", "payment_reference"))) {
+    await db.query("ALTER TABLE orders ADD COLUMN payment_reference VARCHAR(100) NULL");
+  }
+  if (!(await hasColumn("orders", "payment_verified_by"))) {
+    await db.query("ALTER TABLE orders ADD COLUMN payment_verified_by BIGINT UNSIGNED NULL");
+  }
+  if (!(await hasColumn("orders", "payment_verified_at"))) {
+    await db.query("ALTER TABLE orders ADD COLUMN payment_verified_at DATETIME NULL");
+  }
+  const [paymentReferenceIndex] = await db.query(
+    `SELECT 1 FROM information_schema.STATISTICS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders'
+       AND INDEX_NAME = 'uq_orders_payment_reference'`
+  );
+  if (paymentReferenceIndex.length === 0) {
+    await db.query("ALTER TABLE orders ADD UNIQUE INDEX uq_orders_payment_reference (payment_reference)");
+  }
 
   const demoUsers = [
   [
@@ -95,6 +144,7 @@ db.getConnection()
 
 app.use(cors());
 app.use(express.json());
+app.use("/api/orders", orderRoutes(requireRole));
 
 app.get("/", (req, res) => {
   res.json({
