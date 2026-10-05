@@ -14,7 +14,7 @@ Menu prices in `data/menuAdditions.json` are initial estimates, not verified cur
 
 The API is available at `http://localhost:5000` by default. Login returns a signed session token. Customers can create and view only their own orders; administrators can view, update, assign, and delete orders; delivery staff can view only assigned orders and update delivery status.
 
-Orders are saved in MySQL and are not stored in the browser. The API exposes `GET/POST /api/orders`, `PUT/DELETE /api/orders/:id`, `PUT /api/orders/:id/assign`, and the admin-only manual payment confirmation endpoint `PUT /api/orders/:id/payment-confirmation`.
+Orders and profile photos are saved in MySQL and are not limited to one browser or device. The API exposes `PUT /api/profile/avatar` for the authenticated user's own profile photo; the `users.avatar` column is added automatically on startup. Orders use `GET/POST /api/orders`, `PUT/DELETE /api/orders/:id`, `PUT /api/orders/:id/assign`, and the admin-only manual payment confirmation endpoint `PUT /api/orders/:id/payment-confirmation`.
 
 Tigo Pesa, M-Pesa, Airtel Money, and Halo Pesa manual payments store the customer's transaction reference as `Pending Verification`; an administrator must compare the reference and amount with the actual wallet transaction before confirming. This manual flow does not initiate a mobile-money transfer or independently verify payments. The receiving number is the configured Tigo Pesa number; customers can use another wallet only if their provider supports sending to that number. Configure merchant API integrations to automate payment collection and verification.
 

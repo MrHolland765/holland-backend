@@ -66,6 +66,9 @@ const ensureSchema = async () => {
   if (!(await hasColumn("users", "address"))) {
     await db.query("ALTER TABLE users ADD COLUMN address VARCHAR(255) NULL AFTER phone");
   }
+  if (!(await hasColumn("users", "avatar"))) {
+    await db.query("ALTER TABLE users ADD COLUMN avatar MEDIUMTEXT NULL AFTER address");
+  }
   if (!(await hasColumn("products", "prep_time"))) {
     await db.query("ALTER TABLE products ADD COLUMN prep_time VARCHAR(50) NULL AFTER category");
   }
@@ -152,13 +155,46 @@ db.getConnection()
   });
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "2mb" }));
 app.use("/api/orders", orderRoutes(requireRole));
 
 app.get("/", (req, res) => {
   res.json({
     message: "Holland Restaurant Backend is running successfully!"
   });
+});
+
+app.put("/api/profile/avatar", requireRole("customer", "admin", "delivery"), async (req, res) => {
+  const { avatar } = req.body;
+  const dataUrlPrefix = "data:image/jpeg;base64,";
+
+  if (
+    typeof avatar !== "string" ||
+    avatar.length > 1_500_000 ||
+    !avatar.startsWith(dataUrlPrefix) ||
+    !/^[A-Za-z0-9+/]+={0,2}$/.test(avatar.slice(dataUrlPrefix.length))
+  ) {
+    return res.status(400).json({ message: "Picha ya wasifu si sahihi au ni kubwa sana" });
+  }
+
+  const imageData = Buffer.from(avatar.slice(dataUrlPrefix.length), "base64");
+  if (imageData.length < 3 || imageData[0] !== 0xff || imageData[1] !== 0xd8 || imageData[2] !== 0xff) {
+    return res.status(400).json({ message: "Picha ya wasifu lazima iwe JPEG halali" });
+  }
+
+  try {
+    await db.query("UPDATE users SET avatar = ? WHERE id = ?", [avatar, req.user.id]);
+    const [users] = await db.query("SELECT avatar FROM users WHERE id = ?", [req.user.id]);
+
+    if (users.length === 0) {
+      return res.status(404).json({ message: "Akaunti haijapatikana" });
+    }
+
+    res.json({ avatar: users[0].avatar });
+  } catch (error) {
+    console.error("Error saving profile avatar:", error.message);
+    res.status(500).json({ message: "Imeshindikana kuhifadhi picha ya wasifu" });
+  }
 });
 
 // GET all users (passwords are never exposed)
@@ -371,6 +407,7 @@ app.post("/api/login", async (req, res) => {
         email: user.email,
         phone: user.phone,
         address: user.address,
+        avatar: user.avatar,
         role: user.role
       }
     });
