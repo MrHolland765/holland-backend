@@ -8,6 +8,15 @@ import { seedMenu } from "./data/seedMenu.js";
 
 const app = express();
 const tokenSecret = process.env.AUTH_SECRET;
+const isStrongPassword = (password) =>
+  typeof password === "string" &&
+  password.length >= 8 &&
+  /[A-Z]/.test(password) &&
+  /[a-z]/.test(password) &&
+  /\d/.test(password) &&
+  /[^A-Za-z0-9\s]/.test(password);
+const passwordRequirementsMessage =
+  "Nenosiri lazima liwe na angalau herufi 8, herufi kubwa na ndogo, namba na alama maalum";
 
 if (!tokenSecret) {
   throw new Error("AUTH_SECRET must be set in the backend .env file");
@@ -204,8 +213,8 @@ app.post("/api/users", async (req, res) => {
       return res.status(400).json({ message: "Tafadhali weka email sahihi" });
     }
 
-    if (password.length < 6) {
-      return res.status(400).json({ message: "Nenosiri lazima liwe na angalau herufi 6" });
+    if (!isStrongPassword(password)) {
+      return res.status(400).json({ message: passwordRequirementsMessage });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -276,9 +285,9 @@ app.post("/api/delivery", requireRole("admin"), async (req, res) => {
       });
     }
 
-    if (password.length < 6) {
+    if (!isStrongPassword(password)) {
       return res.status(400).json({
-        message: "Password lazima iwe na angalau herufi 6"
+        message: passwordRequirementsMessage
       });
     }
 
