@@ -223,6 +223,41 @@ export const confirmPayment = async (req, res) => {
   }
 };
 
+export const rejectPayment = async (req, res) => {
+  try {
+    const [orders] = await db.query(
+      "SELECT id, payment_status, payment_reference, payment_method FROM orders WHERE order_code = ?",
+      [req.params.id]
+    );
+    const order = orders[0];
+    if (!order) return res.status(404).json({ message: "Oda haijapatikana" });
+    const isMobilePayment =
+      order.payment_status === "Pending Verification" &&
+      Boolean(order.payment_reference);
+    const isCashOnDelivery =
+      order.payment_status === "Pending (Cash)" &&
+      order.payment_method === "Lipa Baadaye (Cash on Delivery)";
+    if (!isMobilePayment && !isCashOnDelivery) {
+      return res.status(409).json({ message: "Oda hii haina malipo yanayosubiri uamuzi" });
+    }
+
+    const [result] = await db.query(
+      `UPDATE orders
+       SET payment_status = 'Rejected', payment_rejected_by = ?, payment_rejected_at = CURRENT_TIMESTAMP
+       WHERE id = ? AND payment_status = ?`,
+      [req.user.id, order.id, order.payment_status]
+    );
+    if (result.affectedRows === 0) {
+      return res.status(409).json({ message: "Malipo ya oda hii tayari yamefanyiwa uamuzi" });
+    }
+    const [updated] = await db.query(`${orderSelect} WHERE o.id = ?`, [order.id]);
+    res.json(normalizeOrder(updated[0]));
+  } catch (error) {
+    console.error("Error rejecting payment:", error.message);
+    res.status(500).json({ message: "Imeshindikana kukataa malipo" });
+  }
+};
+
 export const updateOrder = async (req, res) => {
   try {
     const { id } = req.params;
@@ -272,7 +307,7 @@ export const updateOrder = async (req, res) => {
       if (
         status &&
         !["Pending", "Cancelled"].includes(status) &&
-        order.payment_status === "Pending Verification"
+        order.payment_status !== "Paid"
       ) {
         return res.status(409).json({ message: "Thibitisha malipo kabla ya kuanza kuandaa oda" });
       }

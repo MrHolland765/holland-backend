@@ -91,6 +91,8 @@ const ensureSchema = async () => {
       payment_reference VARCHAR(100) NULL,
       payment_verified_by BIGINT UNSIGNED NULL,
       payment_verified_at DATETIME NULL,
+      payment_rejected_by BIGINT UNSIGNED NULL,
+      payment_rejected_at DATETIME NULL,
       items JSON NOT NULL,
       subtotal DECIMAL(12, 2) NOT NULL,
       fee DECIMAL(12, 2) NOT NULL,
@@ -110,6 +112,12 @@ const ensureSchema = async () => {
   }
   if (!(await hasColumn("orders", "payment_verified_at"))) {
     await db.query("ALTER TABLE orders ADD COLUMN payment_verified_at DATETIME NULL");
+  }
+  if (!(await hasColumn("orders", "payment_rejected_by"))) {
+    await db.query("ALTER TABLE orders ADD COLUMN payment_rejected_by BIGINT UNSIGNED NULL");
+  }
+  if (!(await hasColumn("orders", "payment_rejected_at"))) {
+    await db.query("ALTER TABLE orders ADD COLUMN payment_rejected_at DATETIME NULL");
   }
   const [paymentReferenceIndex] = await db.query(
     `SELECT 1 FROM information_schema.STATISTICS
