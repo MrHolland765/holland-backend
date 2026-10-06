@@ -223,13 +223,30 @@ export const updateOrder = async (req, res) => {
     if (!order) return res.status(404).json({ message: "Oda haijapatikana" });
 
     if (req.user.role === "customer") {
-      if (Number(order.customer_id) !== Number(req.user.id) || order.status !== "Pending") {
+      if (Number(order.customer_id) !== Number(req.user.id)) {
         return res.status(403).json({ message: "Huruhusiwi kubadilisha oda hii" });
       }
-      await db.query(
-        "UPDATE orders SET special_notes = ? WHERE id = ?",
-        [String(specialNotes ?? order.special_notes).slice(0, 1000), order.id]
-      );
+
+      if (status === "Received") {
+        if (order.status !== "Delivered") {
+          return res.status(409).json({ message: "Unaweza kuthibitisha kupokea oda baada ya kukabidhiwa" });
+        }
+        const [result] = await db.query(
+          "UPDATE orders SET status = 'Received' WHERE id = ? AND status = 'Delivered'",
+          [order.id]
+        );
+        if (result.affectedRows === 0) {
+          return res.status(409).json({ message: "Oda hii tayari imesasishwa" });
+        }
+      } else {
+        if (order.status !== "Pending" || (status !== undefined && status !== "Pending")) {
+          return res.status(403).json({ message: "Huruhusiwi kubadilisha oda hii" });
+        }
+        await db.query(
+          "UPDATE orders SET special_notes = ? WHERE id = ? AND status = 'Pending'",
+          [String(specialNotes ?? order.special_notes).slice(0, 1000), order.id]
+        );
+      }
     } else if (req.user.role === "delivery") {
       if (
         Number(order.assigned_to) !== Number(req.user.id) ||
@@ -302,8 +319,23 @@ export const assignOrder = async (req, res) => {
 
 export const deleteOrder = async (req, res) => {
   try {
-    const [result] = await db.query("DELETE FROM orders WHERE order_code = ?", [req.params.id]);
-    if (result.affectedRows === 0) return res.status(404).json({ message: "Oda haijapatikana" });
+    const [orders] = await db.query(
+      "SELECT id, status FROM orders WHERE order_code = ?",
+      [req.params.id]
+    );
+    if (orders.length === 0) {
+      return res.status(404).json({ message: "Oda haijapatikana" });
+    }
+    if (orders[0].status !== "Received") {
+      return res.status(409).json({ message: "Oda inaweza kufutwa baada ya mteja kuthibitisha kuwa ameipokea" });
+    }
+    const [result] = await db.query(
+      "DELETE FROM orders WHERE id = ? AND status = 'Received'",
+      [orders[0].id]
+    );
+    if (result.affectedRows === 0) {
+      return res.status(409).json({ message: "Hali ya oda imebadilika; ionyeshe upya kisha ujaribu tena" });
+    }
     res.status(204).end();
   } catch (error) {
     console.error("Error deleting order:", error.message);
