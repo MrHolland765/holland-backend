@@ -3,6 +3,7 @@ import cors from "cors";
 import db from "./db.js";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
+import nodemailer from "nodemailer";
 import orderRoutes from "./routes/orderRoutes.js";
 import { seedMenu } from "./data/seedMenu.js";
 
@@ -69,6 +70,16 @@ const ensureSchema = async () => {
   if (!(await hasColumn("users", "avatar"))) {
     await db.query("ALTER TABLE users ADD COLUMN avatar MEDIUMTEXT NULL AFTER address");
   }
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS password_reset_tokens (
+      token_hash CHAR(64) NOT NULL PRIMARY KEY,
+      user_id BIGINT UNSIGNED NOT NULL,
+      expires_at DATETIME NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_password_reset_user (user_id),
+      INDEX idx_password_reset_expiry (expires_at)
+    )
+  `);
   if (!(await hasColumn("products", "prep_time"))) {
     await db.query("ALTER TABLE products ADD COLUMN prep_time VARCHAR(50) NULL AFTER category");
   }
@@ -504,6 +515,140 @@ app.post("/api/login", async (req, res) => {
     res.status(500).json({
       message: "Login failed"
     });
+  }
+});
+
+app.post("/api/password/forgot", async (req, res) => {
+  const { SMTP_HOST, SMTP_USER, SMTP_PASSWORD, SMTP_FROM } = process.env;
+  if (!SMTP_HOST || !SMTP_USER || !SMTP_PASSWORD || !SMTP_FROM) {
+    return res.status(503).json({
+      message: "Password reset email is not configured on the server"
+    });
+  }
+
+  const email = typeof req.body?.email === "string"
+    ? req.body.email.trim().toLowerCase()
+    : "";
+  if (!/^\S+@\S+\.\S+$/.test(email)) {
+    return res.status(400).json({ message: "Tafadhali weka email sahihi" });
+  }
+
+  try {
+    const [users] = await db.query(
+      "SELECT id FROM users WHERE email = ? LIMIT 1",
+      [email]
+    );
+
+    if (users.length > 0) {
+      const token = crypto.randomBytes(32).toString("hex");
+      const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+      const resetUrl = new URL("/", frontendUrl);
+      resetUrl.searchParams.set("resetToken", token);
+
+      await db.query(
+        "DELETE FROM password_reset_tokens WHERE user_id = ?",
+        [users[0].id]
+      );
+      await db.query(
+        `INSERT INTO password_reset_tokens (token_hash, user_id, expires_at)
+         VALUES (?, ?, DATE_ADD(UTC_TIMESTAMP(), INTERVAL 1 HOUR))`,
+        [tokenHash, users[0].id]
+      );
+
+      try {
+        const transporter = nodemailer.createTransport({
+          host: SMTP_HOST,
+          port: Number(process.env.SMTP_PORT || 587),
+          secure: Number(process.env.SMTP_PORT) === 465,
+          auth: { user: SMTP_USER, pass: SMTP_PASSWORD },
+        });
+        await transporter.sendMail({
+          from: SMTP_FROM,
+          to: email,
+          subject: "Reset your Holland Restaurant password",
+          text: `Use this link within one hour to reset your password: ${resetUrl}`,
+          html: `<p>Use the link below within one hour to reset your Holland Restaurant password.</p><p><a href="${resetUrl}">Reset password</a></p><p>If you did not request this, you can ignore this email.</p>`,
+        });
+      } catch (error) {
+        await db.query(
+          "DELETE FROM password_reset_tokens WHERE token_hash = ?",
+          [tokenHash]
+        );
+        console.error("Password reset email error:", error.message);
+        return res.status(502).json({
+          message: "Imeshindikana kutuma barua pepe ya kubadilisha nenosiri"
+        });
+      }
+    }
+
+    res.json({
+      message: "If an account exists for that email, a reset link has been sent."
+    });
+  } catch (error) {
+    console.error("Password reset request error:", error.message);
+    res.status(500).json({
+      message: "Imeshindikana kuomba kubadilisha nenosiri"
+    });
+  }
+});
+
+app.post("/api/password/reset", async (req, res) => {
+  const { token, password } = req.body || {};
+  if (typeof token !== "string" || !/^[a-f0-9]{64}$/i.test(token)) {
+    return res.status(400).json({ message: "Kiungo si sahihi au muda wake umeisha" });
+  }
+  if (!isStrongPassword(password)) {
+    return res.status(400).json({ message: passwordRequirementsMessage });
+  }
+
+  let connection;
+  try {
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+    connection = await db.getConnection();
+    await connection.beginTransaction();
+    const [tokens] = await connection.query(
+      `SELECT user_id FROM password_reset_tokens
+       WHERE token_hash = ? AND expires_at > UTC_TIMESTAMP()
+       FOR UPDATE`,
+      [tokenHash]
+    );
+
+    if (tokens.length === 0) {
+      await connection.rollback();
+      return res.status(400).json({ message: "Kiungo si sahihi au muda wake umeisha" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const userId = tokens[0].user_id;
+    const [result] = await connection.query(
+      "UPDATE users SET password = ? WHERE id = ?",
+      [hashedPassword, userId]
+    );
+    if (result.affectedRows === 0) {
+      await connection.rollback();
+      return res.status(400).json({ message: "Kiungo si sahihi au muda wake umeisha" });
+    }
+    await connection.query(
+      "DELETE FROM password_reset_tokens WHERE user_id = ?",
+      [userId]
+    );
+    await connection.commit();
+    res.json({ message: "Nenosiri limebadilishwa vizuri" });
+  } catch (error) {
+    if (connection) {
+      try {
+        await connection.rollback();
+      } catch (rollbackError) {
+        console.error("Password reset rollback error:", rollbackError.message);
+      }
+    }
+    console.error("Password reset error:", error.message);
+    res.status(500).json({
+      message: "Imeshindikana kubadilisha nenosiri"
+    });
+  } finally {
+    if (connection) connection.release();
   }
 });
 
