@@ -191,21 +191,30 @@ export const createOrder = async (req, res) => {
 export const confirmPayment = async (req, res) => {
   try {
     const [orders] = await db.query(
-      "SELECT id, payment_status, payment_reference FROM orders WHERE order_code = ?",
+      "SELECT id, payment_status, payment_reference, payment_method FROM orders WHERE order_code = ?",
       [req.params.id]
     );
     const order = orders[0];
     if (!order) return res.status(404).json({ message: "Oda haijapatikana" });
-    if (order.payment_status !== "Pending Verification" || !order.payment_reference) {
+    const isMobilePayment =
+      order.payment_status === "Pending Verification" &&
+      Boolean(order.payment_reference);
+    const isCashOnDelivery =
+      order.payment_status === "Pending (Cash)" &&
+      order.payment_method === "Lipa Baadaye (Cash on Delivery)";
+    if (!isMobilePayment && !isCashOnDelivery) {
       return res.status(409).json({ message: "Oda hii haina malipo yanayosubiri uthibitisho" });
     }
 
-    await db.query(
+    const [result] = await db.query(
       `UPDATE orders
        SET payment_status = 'Paid', payment_verified_by = ?, payment_verified_at = CURRENT_TIMESTAMP
-       WHERE id = ? AND payment_status = 'Pending Verification'`,
-      [req.user.id, order.id]
+       WHERE id = ? AND payment_status = ?`,
+      [req.user.id, order.id, order.payment_status]
     );
+    if (result.affectedRows === 0) {
+      return res.status(409).json({ message: "Malipo ya oda hii tayari yamethibitishwa" });
+    }
     const [updated] = await db.query(`${orderSelect} WHERE o.id = ?`, [order.id]);
     res.json(normalizeOrder(updated[0]));
   } catch (error) {
@@ -298,7 +307,7 @@ export const assignOrder = async (req, res) => {
       "SELECT payment_status FROM orders WHERE id = ?",
       [orders[0].id]
     );
-    if (payment[0].payment_status === "Pending Verification") {
+    if (payment[0].payment_status !== "Paid") {
       return res.status(409).json({ message: "Thibitisha malipo kabla ya kugawa oda" });
     }
 

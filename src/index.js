@@ -214,6 +214,84 @@ app.get("/api/users", requireRole("admin"), async (req, res) => {
   }
 });
 
+app.get("/api/customers", requireRole("admin"), async (req, res) => {
+  try {
+    const [customers] = await db.query(`
+      SELECT
+        u.id,
+        u.full_name,
+        u.email,
+        u.phone,
+        u.address,
+        EXISTS(
+          SELECT 1 FROM orders o
+          WHERE o.customer_id = u.id AND o.status = 'Received'
+        ) AS has_received_order,
+        NOT EXISTS(
+          SELECT 1 FROM orders o
+          WHERE o.customer_id = u.id
+            AND o.status NOT IN ('Received', 'Cancelled')
+        ) AS has_active_orders
+      FROM users u
+      WHERE u.role = 'customer'
+      ORDER BY u.id DESC
+    `);
+
+    res.json(customers);
+  } catch (error) {
+    console.error("Error fetching customers:", error.message);
+    res.status(500).json({ message: "Imeshindikana kupata wateja" });
+  }
+});
+
+app.delete("/api/customers/:id", requireRole("admin"), async (req, res) => {
+  const customerId = Number(req.params.id);
+  if (!Number.isSafeInteger(customerId) || customerId < 1) {
+    return res.status(400).json({ message: "Akaunti ya mteja si sahihi" });
+  }
+
+  let connection;
+  try {
+    connection = await db.getConnection();
+    await connection.beginTransaction();
+
+    const [customers] = await connection.query(
+      "SELECT id FROM users WHERE id = ? AND role = 'customer' FOR UPDATE",
+      [customerId]
+    );
+    if (customers.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({ message: "Mteja hajapatikana" });
+    }
+
+    const [orders] = await connection.query(
+      `SELECT
+         EXISTS(SELECT 1 FROM orders WHERE customer_id = ? AND status = 'Received') AS has_received_order,
+         EXISTS(SELECT 1 FROM orders WHERE customer_id = ? AND status NOT IN ('Received', 'Cancelled')) AS has_active_orders`,
+      [customerId, customerId]
+    );
+    if (!orders[0].has_received_order || orders[0].has_active_orders) {
+      await connection.rollback();
+      return res.status(409).json({
+        message: "Mteja anaweza kuondolewa baada ya kupokea oda na kumaliza oda zake zote zinazoendelea",
+      });
+    }
+
+    await connection.query(
+      "DELETE FROM users WHERE id = ? AND role = 'customer'",
+      [customerId]
+    );
+    await connection.commit();
+    res.status(204).end();
+  } catch (error) {
+    if (connection) await connection.rollback();
+    console.error("Error deleting customer:", error.message);
+    res.status(500).json({ message: "Imeshindikana kuondoa akaunti ya mteja" });
+  } finally {
+    connection?.release();
+  }
+});
+
 // GET all delivery staff
 app.get("/api/delivery", requireRole("admin"), async (req, res) => {
   try {
