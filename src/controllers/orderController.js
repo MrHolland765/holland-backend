@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import nodemailer from "nodemailer";
 import db from "../db.js";
 
 const normalizeOrder = (row) => {
@@ -37,6 +38,66 @@ const orderSelect = `
   FROM orders o
   LEFT JOIN users u ON u.id = o.assigned_to
 `;
+
+const sendOrderNotificationEmail = async (orderData) => {
+  const { SMTP_HOST, SMTP_USER, SMTP_PASSWORD, SMTP_FROM, ADMIN_EMAIL, FRONTEND_URL } = process.env;
+  if (!SMTP_HOST || !SMTP_USER || !SMTP_PASSWORD || !SMTP_FROM) {
+    return;
+  }
+
+  const recipients = (ADMIN_EMAIL || "abdullhamidkhamis765@gmail.com")
+    .split(",")
+    .map((email) => email.trim())
+    .filter(Boolean);
+
+  if (recipients.length === 0) {
+    return;
+  }
+
+  const itemList = Array.isArray(orderData.items)
+    ? orderData.items
+        .map((item) => `- ${item.name} x${item.quantity} (${Number(item.price).toLocaleString("en-US")} TZS)`)
+        .join("\n")
+    : "- No item details";
+
+  const orderUrl = new URL(FRONTEND_URL || "http://localhost:5173");
+  orderUrl.searchParams.set("orderCode", orderData.orderCode);
+
+  const transporter = nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: Number(process.env.SMTP_PORT || 587),
+    secure: Number(process.env.SMTP_PORT) === 465,
+    auth: { user: SMTP_USER, pass: SMTP_PASSWORD },
+  });
+
+  await transporter.sendMail({
+    from: SMTP_FROM,
+    to: recipients,
+    subject: `New Holland Restaurant order: ${orderData.orderCode}`,
+    text: `New order received on Holland Restaurant.\n\nCustomer: ${orderData.customerName}\nPhone: ${orderData.customerPhone}\nAddress: ${orderData.customerAddress}\nPayment: ${orderData.paymentMethod} (${orderData.paymentStatus})\nTotal: ${Number(orderData.total).toLocaleString("en-US")} TZS\n\nOrder items:\n${itemList}\n\nOpen the system here: ${orderUrl.toString()}\n\nReview the order before approving or assigning delivery.`,
+    html: `
+      <div style="font-family: Arial, sans-serif; color: #1f2937; line-height: 1.6;">
+        <h2 style="margin-bottom: 8px;">New Holland Restaurant order</h2>
+        <p><strong>Order code:</strong> ${orderData.orderCode}</p>
+        <p><strong>Customer:</strong> ${orderData.customerName}</p>
+        <p><strong>Phone:</strong> ${orderData.customerPhone}</p>
+        <p><strong>Address:</strong> ${orderData.customerAddress || "Not provided"}</p>
+        <p><strong>Payment:</strong> ${orderData.paymentMethod} (${orderData.paymentStatus})</p>
+        <p><strong>Total:</strong> ${Number(orderData.total).toLocaleString("en-US")} TZS</p>
+        <p><strong>Items:</strong></p>
+        <ul>
+          ${Array.isArray(orderData.items)
+            ? orderData.items
+                .map((item) => `<li>${item.name} x${item.quantity} (${Number(item.price).toLocaleString("en-US")} TZS)</li>`)
+                .join("")
+            : "<li>No item details</li>"}
+        </ul>
+        <p><strong>Special notes:</strong> ${orderData.specialNotes || "None"}</p>
+        <p><a href="${orderUrl.toString()}" style="display: inline-block; background: #111827; color: white; padding: 10px 16px; border-radius: 8px; text-decoration: none; margin-top: 12px;">Open system and review order</a></p>
+      </div>
+    `,
+  });
+};
 
 export const getOrders = async (req, res) => {
   try {
@@ -98,6 +159,34 @@ export const createOrder = async (req, res) => {
         quantity: Number(item.quantity),
         image: String(item.image || ""),
       }));
+
+    const productIds = cleanItems
+      .map((item) => item.id)
+      .filter((value) => value !== undefined && value !== null && value !== "");
+
+    if (productIds.length > 0) {
+      const placeholders = productIds.map(() => "?").join(", ");
+      const [products] = await db.query(
+        `SELECT id, name, available, available_until, availability_message FROM products WHERE id IN (${placeholders})`,
+        productIds
+      );
+
+      const productMap = new Map(products.map((product) => [String(product.id), product]));
+      const unavailableItem = cleanItems.find((item) => {
+        const product = productMap.get(String(item.id));
+        if (!product) return true;
+        const isAvailable = Boolean(product.available);
+        const until = product.available_until ? new Date(product.available_until) : null;
+        const isTemporarilyUnavailable = until && until.getTime() > Date.now();
+        return !isAvailable || isTemporarilyUnavailable;
+      });
+
+      if (unavailableItem) {
+        const product = productMap.get(String(unavailableItem.id));
+        const message = product?.availability_message || "Hii bidhaa haipatikani kwa sasa. Tafadhali subiri au wasiliana na admin.";
+        return res.status(409).json({ message });
+      }
+    }
 
     const numericSubtotal = Number(subtotal);
     const numericFee = Number(fee);
@@ -181,7 +270,25 @@ export const createOrder = async (req, res) => {
     }
 
     const [rows] = await db.query(`${orderSelect} WHERE o.id = ?`, [result.insertId]);
-    res.status(201).json(normalizeOrder(rows[0]));
+    const createdOrder = normalizeOrder(rows[0]);
+
+    try {
+      await sendOrderNotificationEmail({
+        orderCode: createdOrder.id,
+        customerName: createdOrder.customerName,
+        customerPhone: createdOrder.customerPhone,
+        customerAddress: createdOrder.customerAddress,
+        paymentMethod: createdOrder.paymentMethod,
+        paymentStatus: createdOrder.paymentStatus,
+        total: createdOrder.total,
+        specialNotes: createdOrder.specialNotes,
+        items: createdOrder.items,
+      });
+    } catch (emailError) {
+      console.error("Error sending order notification email:", emailError.message);
+    }
+
+    res.status(201).json(createdOrder);
   } catch (error) {
     console.error("Error creating order:", error.message);
     res.status(500).json({ message: "Imeshindikana kuunda oda" });

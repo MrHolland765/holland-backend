@@ -83,6 +83,12 @@ const ensureSchema = async () => {
   if (!(await hasColumn("products", "prep_time"))) {
     await db.query("ALTER TABLE products ADD COLUMN prep_time VARCHAR(50) NULL AFTER category");
   }
+  if (!(await hasColumn("products", "available_until"))) {
+    await db.query("ALTER TABLE products ADD COLUMN available_until DATETIME NULL AFTER available");
+  }
+  if (!(await hasColumn("products", "availability_message"))) {
+    await db.query("ALTER TABLE products ADD COLUMN availability_message VARCHAR(255) NULL AFTER available_until");
+  }
   await seedMenu();
   await db.query(`
     CREATE TABLE IF NOT EXISTS orders (
@@ -672,14 +678,36 @@ app.get("/api/products", async (req, res) => {
 
 app.post("/api/products", requireRole("admin"), async (req, res) => {
   try {
-    const { name, description = "", price, image = "", category = "Foods", prepTime = "15-20 min", available = true } = req.body;
+    const {
+      name,
+      description = "",
+      price,
+      image = "",
+      category = "Foods",
+      prepTime = "15-20 min",
+      available = true,
+      availableUntil = null,
+      availabilityMessage = "",
+    } = req.body;
+
     if (!name || !Number.isFinite(Number(price)) || Number(price) < 0) {
       return res.status(400).json({ message: "Jina na bei sahihi vinahitajika" });
     }
+
     const [result] = await db.query(
-      `INSERT INTO products (name, description, price, image, category, prep_time, available)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [name.trim(), description.trim(), Number(price), image.trim(), category.trim(), prepTime.trim(), Boolean(available)]
+      `INSERT INTO products (name, description, price, image, category, prep_time, available, available_until, availability_message)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        name.trim(),
+        description.trim(),
+        Number(price),
+        image.trim(),
+        category.trim(),
+        prepTime.trim(),
+        Boolean(available),
+        availableUntil ? new Date(availableUntil).toISOString().slice(0, 19).replace("T", " ") : null,
+        availabilityMessage ? String(availabilityMessage).trim().slice(0, 255) : null,
+      ]
     );
     const [products] = await db.query("SELECT * FROM products WHERE id = ?", [result.insertId]);
     res.status(201).json(products[0]);
@@ -691,13 +719,36 @@ app.post("/api/products", requireRole("admin"), async (req, res) => {
 
 app.put("/api/products/:id", requireRole("admin"), async (req, res) => {
   try {
-    const { name, description = "", price, image = "", category = "Foods", prepTime = "15-20 min", available = true } = req.body;
+    const {
+      name,
+      description = "",
+      price,
+      image = "",
+      category = "Foods",
+      prepTime = "15-20 min",
+      available = true,
+      availableUntil = null,
+      availabilityMessage = "",
+    } = req.body;
+
     if (!name || !Number.isFinite(Number(price)) || Number(price) < 0) {
       return res.status(400).json({ message: "Jina na bei sahihi vinahitajika" });
     }
+
     const [result] = await db.query(
-      `UPDATE products SET name = ?, description = ?, price = ?, image = ?, category = ?, prep_time = ?, available = ? WHERE id = ?`,
-      [name.trim(), description.trim(), Number(price), image.trim(), category.trim(), prepTime.trim(), Boolean(available), req.params.id]
+      `UPDATE products SET name = ?, description = ?, price = ?, image = ?, category = ?, prep_time = ?, available = ?, available_until = ?, availability_message = ? WHERE id = ?`,
+      [
+        name.trim(),
+        description.trim(),
+        Number(price),
+        image.trim(),
+        category.trim(),
+        prepTime.trim(),
+        Boolean(available),
+        availableUntil ? new Date(availableUntil).toISOString().slice(0, 19).replace("T", " ") : null,
+        availabilityMessage ? String(availabilityMessage).trim().slice(0, 255) : null,
+        req.params.id,
+      ]
     );
     if (result.affectedRows === 0) return res.status(404).json({ message: "Bidhaa haijapatikana" });
     const [products] = await db.query("SELECT * FROM products WHERE id = ?", [req.params.id]);
